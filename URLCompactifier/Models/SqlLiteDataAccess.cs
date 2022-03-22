@@ -13,9 +13,9 @@ namespace URLCompactifier.Models
         /// </summary>
         /// <param name="link">URL to pass through</param>
         /// <returns></returns>
-        public static PrimaryLinkBO GetPrimaryLink(string link)
+        public static PrimaryLinkBO GetPrimaryLink(int id)
         {
-            string SqlQuery = $@"SELECT * FROM PrimaryLink WHERE PrimaryLink_Name = '{link}'";
+            string SqlQuery = $@"SELECT * FROM PrimaryLink WHERE Id = '{id}'";
 
 
             using (IDbConnection cnn = new SQLiteConnection(connectionString))
@@ -31,15 +31,15 @@ namespace URLCompactifier.Models
         /// </summary>
         /// <param name="link">URL to pass through</param>
         /// <returns></returns>
-        public static SecondaryLinkBO GetSecondaryLink(string link)
+        public static LinkBO GetSecondaryLink(string token)
         {
-            string sqlQuery = $@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Name = '{link}'";
+            string sqlQuery = $@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Token = '{token}'";
 
             using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                var output = cnn.Query<PrimaryLinkBO>(sqlQuery);
+                var output = cnn.QueryFirst<LinkBO>(sqlQuery);
 
-                return (SecondaryLinkBO)output;
+                return output;
             }
         }
 
@@ -67,7 +67,7 @@ namespace URLCompactifier.Models
         /// </summary>
         /// <param name="primaryLink">Primary link details</param>
         /// <param name="secondaryLink">Secondary link details</param>
-        public static void UploadLinks(PrimaryLinkBO primaryLink, SecondaryLinkBO secondaryLink)
+        public static void UploadLinks(PrimaryLinkBO primaryLink, LinkBO secondaryLink)
         {
             string sqlQuery = $"INSERT INTO PrimaryLink (PrimaryLink_Name) VALUES ('{primaryLink.PrimaryLink_Name}')";
             using (IDbConnection cnn = new SQLiteConnection(connectionString))
@@ -75,8 +75,8 @@ namespace URLCompactifier.Models
                 cnn.Execute(sqlQuery, primaryLink);
             }
 
-            var primary = GetPrimaryLink(primaryLink.PrimaryLink_Name);
-            UploadSecondStageLink(secondaryLink, primary.Id);
+            //var primary = GetPrimaryLink(primaryLink.PrimaryLink_Name);
+            //UploadSecondStageLink(secondaryLink, primary.Id);
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace URLCompactifier.Models
         /// </summary>
         /// <param name="secondaryLink">Secondary link details</param>
         /// <param name="primaryLink_Id">Primary link ID for linking</param>
-        private static void UploadSecondStageLink(SecondaryLinkBO secondaryLink, int primaryLink_Id)
+        private static void UploadSecondStageLink(LinkBO secondaryLink, int primaryLink_Id)
         {
             secondaryLink.PrimaryLink_ID = primaryLink_Id;
             string sqlQuery = $"INSERT INTO SecondaryLink (SecondaryLink_Name, SecondaryLink_Token, PrimaryLink_ID) VALUES ('{secondaryLink.SecondaryLink_Name}','{secondaryLink.SecondaryLink_Token}', {secondaryLink.PrimaryLink_ID})";
