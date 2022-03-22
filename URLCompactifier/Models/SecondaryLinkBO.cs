@@ -13,6 +13,11 @@
         public string SecondaryLink_Name { get; set; }
 
         /// <summary>
+        /// Compacted link
+        /// </summary>
+        public string CompactLink_Name { get; set; }
+
+        /// <summary>
         /// ID for Primary Link to link
         /// </summary>
         public int PrimaryLink_ID { get; set; }

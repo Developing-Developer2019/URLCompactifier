@@ -15,11 +15,13 @@
         /// <summary>
         /// Primary link
         /// </summary>
-        public PrimaryLinkBO PrimaryLink { get; set; }
+        public PrimaryLinkBO PrimaryLink { get; set; } = new PrimaryLinkBO();
 
         /// <summary>
         /// Secondary link
         /// </summary>
-        public SecondaryLinkBO SecondaryLink { get; set; }
+        public SecondaryLinkBO SecondaryLink { get; set; } = new SecondaryLinkBO();
+
+        public string PrimarySiteLink = "compact.com/";
     }
 }
