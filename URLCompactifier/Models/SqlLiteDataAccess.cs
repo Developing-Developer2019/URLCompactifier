@@ -13,25 +13,33 @@ namespace URLCompactifier.Models
         /// </summary>
         /// <param name="link">URL to pass through</param>
         /// <returns></returns>
-        public static LinkBO GetLinkDetails(string token)
+        public static LinkBO GetLinkDetailsWithTokenOrName(string input, bool isToken)
         {
+            string searchInput = isToken ? "Link_Token" : "Link_Name";
+
             string SqlQuery = $@"
 SELECT 
-    Link_Name
+    Link_ID
+,   Link_Name
 ,   Link_Token
 ,   Link_CreatedDateT
 ,   Link_ExpiryDateT
 FROM Link 
-WHERE Link_Token = '{token}'
+WHERE {searchInput} = '{input}'
 ";
 
             using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
                 var output = cnn.QueryFirst<LinkBO>(SqlQuery);
 
-                if (output.Link_ExpiryDateT < DateTime.Now)
+                if (output == null)
                 {
+                    output = new LinkBO();
+                }
 
+                if (DateTime.Parse(output.Link_ExpiryDateT) < DateTime.Now)
+                {
+                    DeleteLinks();
                 }
 
                 return output;
@@ -41,14 +49,33 @@ WHERE Link_Token = '{token}'
         /// <summary>
         /// Check if link is duplicate
         /// </summary>
-        /// <param name="url">URL to check</param>
-        /// <returns></returns>
-        public static bool IsLinkDuplicate(string url)
+        /// <param name="link">Link to check</param>
+        /// <returns>True if duplicate</returns>
+        public static bool DoesLinkExist(string link)
         {
             string SqlQuery = $@"
-SELECT 1 
+SELECT 1
 FROM Link 
-WHERE Link_Name = '{url}'";
+WHERE Link_Name = '{link}'";
+
+            using (IDbConnection cnn = new SQLiteConnection(connectionString))
+            {
+                var linkList = cnn.Query<LinkBO>(SqlQuery);
+                return linkList.Any();
+            }
+        }
+
+        /// <summary>
+        /// Check if token is duplicate
+        /// </summary>
+        /// <param name="token">Token to check</param>
+        /// <returns>True if duplicate</returns>
+        public static bool DoesTokenExist(string token)
+        {
+            string SqlQuery = $@"
+SELECT 1
+FROM Link 
+WHERE Link_Token = '{token}'";
 
             using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
@@ -75,8 +102,8 @@ VALUES
 (
     '{link.Link_Name}'
 ,   '{link.Link_Token}'
-,   {DateTime.Now}
-,   {DateTime.Now.AddDays(7)}
+,   '{link.Link_CreatedDateT}'
+,   '{link.Link_ExpiryDateT}'
 )";
             using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
@@ -87,7 +114,7 @@ VALUES
         /// <summary>
         /// Delete expired links
         /// </summary>
-        public void DeleteLinks()
+        public static void DeleteLinks()
         {
             string sqlQuery = @$"
 DELETE Link
