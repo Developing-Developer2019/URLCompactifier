@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using URLCompactifier.Models;
+using URLCompactifier.Models.SharedExtensions;
 
 namespace URLCompactifier.Controllers
 {
@@ -34,8 +35,10 @@ namespace URLCompactifier.Controllers
                 return RedirectToAction("Index");
             }
 
+            // Initiate new linkBO
             LinkBO link = new LinkBO();
 
+            // Check if link exists
             var linkExists = SqlLiteDataAccess.DoesLinkExist(urlFullLink);
 
             if (linkExists)
@@ -55,7 +58,10 @@ namespace URLCompactifier.Controllers
 
                 // Upload link to DB
                 SqlLiteDataAccess.UploadLinks(link);
-            }           
+            }
+
+            // Add Http to string
+            link.Link_Name = SharedExtensions.HttpInput(link.Link_Name);
 
             // Return view with populated data
             return RedirectToAction("Index", link);
@@ -83,5 +89,18 @@ namespace URLCompactifier.Controllers
 
             return tokenValue;
         }
+
+        /// <summary>
+        /// If redirecting straight from view
+        /// </summary>
+        /// <param name="link">link from view</param>
+        public RedirectResult RedirectFromPage(string link)
+        {
+            // Add Http to string
+            link = SharedExtensions.HttpInput(link);
+
+            return new RedirectResult(link);
+        }
     }
 }
+

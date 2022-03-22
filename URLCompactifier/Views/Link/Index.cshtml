@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "Home Page";
-    string link = $"{Model.PrimarySiteLink}{Model.Link_Token}";
+    string link = $"{Model.PrimarySiteLink}r/{Model.Link_Token}";
     string LinkStatus = Model.LinkExists ? "There is currently a shortened link for this URL:" : "Here is your shortened link:";
 }
 
@@ -25,9 +25,11 @@
         @if (!string.IsNullOrEmpty(Model.Link_ExpiryDateT))
         {
             <span class="display-6">@LinkStatus</span>
-            <h4 class="display-4"><a href="@link"> @Html.DisplayFor(e => e.PrimarySiteLink) @Html.DisplayFor(e => e.Link_Token)</a></h4>
+            <h4 class="display-4">@Html.ActionLink($"{@link}", "RedirectFromPage", "Link", new { link = Model.Link_Name })</h4>
             <span class="display-6">This will expire on @Html.DisplayFor(e => e.Link_ExpiryDateT)</span>
         }
+
+        
 
     </div>
 </div>
