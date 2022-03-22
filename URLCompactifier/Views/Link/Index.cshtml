@@ -1,0 +1,30 @@
+﻿@model URLCompactifier.Models.LinkDTO
+
+@{
+    ViewData["Title"] = "Home Page";
+    string link = $"{Model.PrimarySiteLink}{Model.CompactifyLink}";
+}
+
+<div style="display: flex; justify-content: center; align-items: center; text-align: center; min-height: 75vh;">
+    <div class="text-center">
+        <h1 class="display-4">Use the textbox below to compactify your URL!</h1>
+        @using (Html.BeginForm("InputURL", "Link", FormMethod.Post))
+        {
+            <br />
+            <input type="text" name="urlFullLink" id="urlFullLink" class="w-75">
+            <br />
+            <br />
+            <input class="btn btn-outline-success" type="submit" value="Compactify">
+            @Html.ActionLink("Back", "Index", "Home", null, new { @class="btn btn-outline-danger" })
+        }
+
+        <br />
+        <br />
+
+        @if (!string.IsNullOrEmpty(Model.CompactifyLink))
+        {
+            <span class="display-6">Here is your shortened link:</span>
+            <h4 class="display-4"><a href="@link"> @Html.DisplayFor(e => e.PrimarySiteLink) @Html.DisplayFor(e => e.CompactifyLink)</a></h4>
+        }
+    </div>
+</div>
