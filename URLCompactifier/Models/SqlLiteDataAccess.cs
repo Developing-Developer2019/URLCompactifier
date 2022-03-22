@@ -6,7 +6,7 @@ namespace URLCompactifier.Models
 {
     public class SqlLiteDataAccess
     {
-        static ConfigurationManager? configurationManager;
+        static string connectionString = "Data Source=.\\DemoDB.db;Version=3;";
 
         /// <summary>
         /// Get Primary links based on input
@@ -15,13 +15,12 @@ namespace URLCompactifier.Models
         /// <returns></returns>
         public static PrimaryLinkBO GetPrimaryLink(string link)
         {
-            var dynamicParameters = new DynamicParameters();
+            string SqlQuery = $@"SELECT * FROM PrimaryLink WHERE PrimaryLink_Name = '{link}'";
 
-            dynamicParameters.AddDynamicParams(link);
 
-            using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
+            using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                var output = cnn.Query<PrimaryLinkBO>($@"SELECT * FROM PrimaryLink WHERE PrimaryLink_Name = '{link}'", dynamicParameters);
+                var output = cnn.QueryFirst<PrimaryLinkBO>(SqlQuery);
 
                 return (PrimaryLinkBO)output;
             }
@@ -34,13 +33,11 @@ namespace URLCompactifier.Models
         /// <returns></returns>
         public static SecondaryLinkBO GetSecondaryLink(string link)
         {
-            var dynamicParameters = new DynamicParameters();
+            string sqlQuery = $@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Name = '{link}'";
 
-            dynamicParameters.AddDynamicParams(link);
-
-            using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
+            using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                var output = cnn.Query<PrimaryLinkBO>($@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Name = '{link}'", dynamicParameters);
+                var output = cnn.Query<PrimaryLinkBO>(sqlQuery);
 
                 return (SecondaryLinkBO)output;
             }
@@ -52,12 +49,15 @@ namespace URLCompactifier.Models
         /// <param name="primaryLink">Primary link details</param>
         /// <param name="secondaryLink">Secondary link details</param>
         /// <returns></returns>
-        public bool IsLinkDuplicate(string primaryLink, string secondaryLink)
+        public static bool IsLinkDuplicate(string primaryLink, string secondaryLink)
         {
-            using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
+            string primarySQL = $@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Name = '{secondaryLink}'";
+            string secondarySQL = $@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Name = '{secondaryLink}'";
+
+            using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                var outputPrimary = cnn.Query<PrimaryLinkBO>($@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Name = '{secondaryLink}'", new DynamicParameters());
-                var outputSecondary = cnn.Query<PrimaryLinkBO>($@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Name = '{secondaryLink}'", new DynamicParameters());
+                var outputPrimary = cnn.Query<PrimaryLinkBO>(primarySQL, new DynamicParameters());
+                var outputSecondary = cnn.Query<PrimaryLinkBO>(secondarySQL, new DynamicParameters());
                 return outputPrimary.Any() && outputSecondary.Any();
             }
         }
@@ -69,13 +69,14 @@ namespace URLCompactifier.Models
         /// <param name="secondaryLink">Secondary link details</param>
         public static void UploadLinks(PrimaryLinkBO primaryLink, SecondaryLinkBO secondaryLink)
         {
-            using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
+            string sqlQuery = $"INSERT INTO PrimaryLink (PrimaryLink_Name) VALUES ('{primaryLink.PrimaryLink_Name}')";
+            using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                cnn.Execute("INSERT INTO PrimaryLink (PrimaryLink_Name) VALUES (@PrimaryLink_Name)", primaryLink);
+                cnn.Execute(sqlQuery, primaryLink);
             }
 
             var primary = GetPrimaryLink(primaryLink.PrimaryLink_Name);
-            UploadSecondStageLink(secondaryLink, primaryLink.Id);
+            UploadSecondStageLink(secondaryLink, primary.Id);
         }
 
         /// <summary>
@@ -86,20 +87,29 @@ namespace URLCompactifier.Models
         private static void UploadSecondStageLink(SecondaryLinkBO secondaryLink, int primaryLink_Id)
         {
             secondaryLink.PrimaryLink_ID = primaryLink_Id;
+            string sqlQuery = $"INSERT INTO SecondaryLink (SecondaryLink_Name, SecondaryLink_Token, PrimaryLink_ID) VALUES ('{secondaryLink.SecondaryLink_Name}','{secondaryLink.SecondaryLink_Token}', {secondaryLink.PrimaryLink_ID})";
 
-            using (IDbConnection cnn = new SQLiteConnection(LoadConnectionString()))
+            using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                cnn.Execute("INSERT INTO SecondaryLink (SecondaryLink_Name, PrimaryLink_ID) VALUES (@SecondaryLink_Name, @PrimaryLink_ID)", secondaryLink);
+                cnn.Execute(sqlQuery, secondaryLink);
             }
         }
 
         /// <summary>
-        /// Load connection string
+        /// Check if token exists
         /// </summary>
-        /// <returns></returns>
-        private static string LoadConnectionString()
+        /// <param name="token">input token</param>
+        /// <returns>True if exists</returns>
+        public static bool DoesTokenExist(string token)
         {
-            return configurationManager.GetConnectionString("Default");
+            var sqlQuery = $@"SELECT 1 FROM SecondaryLink WHERE SecondaryLink_Token = '{token}'";
+
+            using (IDbConnection connection = new SQLiteConnection(connectionString))
+            {
+                var output = connection.Query<PrimaryLinkBO>(sqlQuery);
+
+                return output.Any();
+            }
         }
     }
 }

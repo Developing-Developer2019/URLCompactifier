@@ -15,7 +15,7 @@
         /// <summary>
         /// Compacted link
         /// </summary>
-        public string CompactLink_Name { get; set; }
+        public string SecondaryLink_Token { get; set; }
 
         /// <summary>
         /// ID for Primary Link to link
