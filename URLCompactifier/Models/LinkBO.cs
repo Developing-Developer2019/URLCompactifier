@@ -5,7 +5,7 @@
         /// <summary>
         /// ID for Secondary Link
         /// </summary>
-        public int Link_ID { get; set; }
+        public int? Link_ID { get; set; }
 
         /// <summary>
         /// Name for Secondary Link
@@ -20,23 +20,22 @@
         /// <summary>
         /// Created date of link
         /// </summary>
-        public DateTime Link_CreatedDateT { get; set; }
+        public string Link_CreatedDateT { get; set; }
 
         /// <summary>
         /// Expiry date of link
         /// </summary>
-        public DateTime Link_ExpiryDateT { get; set; }
-
-        public string PrimarySiteLink = "compact.com/";
+        public string? Link_ExpiryDateT { get; set; }
 
         /// <summary>
-        /// Original Link
+        /// Primary Site Link
         /// </summary>
-        public string OriginalLink { get; set; } = string.Empty;
+
+        public string PrimarySiteLink = "www.compact.com/";
 
         /// <summary>
-        /// Compact link
+        /// True if link already exists
         /// </summary>
-        public string CompactifyLink { get; set; } = string.Empty;
+        public bool LinkExists { get; set; }
     }
 }
