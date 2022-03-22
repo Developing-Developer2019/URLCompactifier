@@ -5,15 +5,20 @@ namespace URLCompactifier.Controllers
 {
     public class LinkController : Controller
     {
-
-        public IActionResult Index(LinkDTO? linkDTO)
+        /// <summary>
+        /// Link index
+        /// </summary>
+        /// <param name="link">Link details to pass to the view</param>
+        /// <returns></returns>
+        public IActionResult Index(LinkBO link)
         {
-            if (linkDTO == null)
+            // If link is empty, initialise new link
+            if (link == null)
             {
-                linkDTO = new LinkDTO();
+                link = new LinkBO();
             }
 
-            return View(linkDTO);
+            return View(link);
         }
 
         /// <summary>
@@ -29,20 +34,31 @@ namespace URLCompactifier.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Initiate variables
-            var linkArray = urlFullLink.Split(new[] { '/' }, 2);
-            var linkDTO = new LinkDTO();
+            LinkBO link = new LinkBO();
 
-            // Populate DTO values
-            linkDTO.PrimaryLink.PrimaryLink_Name = linkArray[0];
-            linkDTO.SecondaryLink.SecondaryLink_Name = linkArray[1];
-            linkDTO.SecondaryLink.SecondaryLink_Token = GenerateToken();
-            linkDTO.CompactifyLink = linkDTO.SecondaryLink.SecondaryLink_Token;
+            var linkExists = SqlLiteDataAccess.DoesLinkExist(urlFullLink);
 
-            SqlLiteDataAccess.UploadLinks(linkDTO.PrimaryLink, linkDTO.SecondaryLink);
+            if (linkExists)
+            {
+                // Initiate linkBO to check current values
+                link = SqlLiteDataAccess.GetLinkDetailsWithTokenOrName(urlFullLink, false);
+                link.LinkExists = linkExists;
+            }
+            // If link isn't in database then set new link properties
+            else
+            {
+                link.Link_Name = urlFullLink;
+                link.Link_Token = GenerateToken();
+                link.Link_CreatedDateT = DateTime.Now.ToShortDateString();
+                link.Link_ExpiryDateT = DateTime.Now.AddDays(7).ToShortDateString();
+                link.LinkExists = linkExists;
+
+                // Upload link to DB
+                SqlLiteDataAccess.UploadLinks(link);
+            }           
 
             // Return view with populated data
-            return RedirectToAction("Index", linkDTO);
+            return RedirectToAction("Index", link);
         }
 
         /// <summary>
