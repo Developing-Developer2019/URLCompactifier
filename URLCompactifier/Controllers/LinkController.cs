@@ -5,6 +5,7 @@ namespace URLCompactifier.Controllers
 {
     public class LinkController : Controller
     {
+
         public IActionResult Index(LinkDTO? linkDTO)
         {
             if (linkDTO == null)
@@ -33,24 +34,38 @@ namespace URLCompactifier.Controllers
             var linkDTO = new LinkDTO();
 
             // Populate DTO values
-            linkDTO.CompactifyLink = RandomiseString(urlFullLink);
-            linkDTO.PrimaryLink.PrimaryLink_Name = linkArray[0]; 
+            linkDTO.PrimaryLink.PrimaryLink_Name = linkArray[0];
             linkDTO.SecondaryLink.SecondaryLink_Name = linkArray[1];
+            linkDTO.SecondaryLink.SecondaryLink_Token = GenerateToken();
+            linkDTO.CompactifyLink = linkDTO.SecondaryLink.SecondaryLink_Token;
+
+            SqlLiteDataAccess.UploadLinks(linkDTO.PrimaryLink, linkDTO.SecondaryLink);
 
             // Return view with populated data
             return RedirectToAction("Index", linkDTO);
         }
 
-        public string RandomiseString(string urlFullLink)
+        /// <summary>
+        /// Method to generate a token
+        /// </summary>
+        /// <returns>Randomised token between 8-10</returns>
+        public string GenerateToken()
         {
-            int range = 10;
+            string urlsafe = string.Empty;
+            Enumerable.Range(48, 75)
+              .Where(i => i < 58 || i > 64 && i < 91 || i > 96)
+              .OrderBy(o => new Random().Next())
+              .ToList()
+              .ForEach(i => urlsafe += Convert.ToChar(i)); // Store each char into urlsafe
+            var tokenValue = urlsafe.Substring(new Random().Next(0, urlsafe.Length), new Random().Next(8, 15));
 
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            // Check if token exists, if true, run again
+            if (SqlLiteDataAccess.DoesTokenExist(tokenValue))
+            {
+                GenerateToken();
+            }
 
-            var random = new Random();
-            var randomString = new string(Enumerable.Repeat(chars, range)
-                                                    .Select(s => s[random.Next(s.Length)]).ToArray());
-            return randomString;
+            return tokenValue;
         }
     }
 }
