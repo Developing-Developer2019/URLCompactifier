@@ -9,35 +9,30 @@ namespace URLCompactifier.Models
         static string connectionString = "Data Source=.\\DemoDB.db;Version=3;";
 
         /// <summary>
-        /// Get Primary links based on input
+        /// Get link details based on input
         /// </summary>
         /// <param name="link">URL to pass through</param>
         /// <returns></returns>
-        public static PrimaryLinkBO GetPrimaryLink(int id)
+        public static LinkBO GetLinkDetails(string token)
         {
-            string SqlQuery = $@"SELECT * FROM PrimaryLink WHERE Id = '{id}'";
-
+            string SqlQuery = $@"
+SELECT 
+    Link_Name
+,   Link_Token
+,   Link_CreatedDateT
+,   Link_ExpiryDateT
+FROM Link 
+WHERE Link_Token = '{token}'
+";
 
             using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                var output = cnn.QueryFirst<PrimaryLinkBO>(SqlQuery);
+                var output = cnn.QueryFirst<LinkBO>(SqlQuery);
 
-                return (PrimaryLinkBO)output;
-            }
-        }
+                if (output.Link_ExpiryDateT < DateTime.Now)
+                {
 
-        /// <summary>
-        /// Get secondary link based on input
-        /// </summary>
-        /// <param name="link">URL to pass through</param>
-        /// <returns></returns>
-        public static LinkBO GetSecondaryLink(string token)
-        {
-            string sqlQuery = $@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Token = '{token}'";
-
-            using (IDbConnection cnn = new SQLiteConnection(connectionString))
-            {
-                var output = cnn.QueryFirst<LinkBO>(sqlQuery);
+                }
 
                 return output;
             }
@@ -46,69 +41,61 @@ namespace URLCompactifier.Models
         /// <summary>
         /// Check if link is duplicate
         /// </summary>
-        /// <param name="primaryLink">Primary link details</param>
-        /// <param name="secondaryLink">Secondary link details</param>
+        /// <param name="url">URL to check</param>
         /// <returns></returns>
-        public static bool IsLinkDuplicate(string primaryLink, string secondaryLink)
+        public static bool IsLinkDuplicate(string url)
         {
-            string primarySQL = $@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Name = '{secondaryLink}'";
-            string secondarySQL = $@"SELECT * FROM SecondaryLink WHERE SecondaryLink_Name = '{secondaryLink}'";
+            string SqlQuery = $@"
+SELECT 1 
+FROM Link 
+WHERE Link_Name = '{url}'";
 
             using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                var outputPrimary = cnn.Query<PrimaryLinkBO>(primarySQL, new DynamicParameters());
-                var outputSecondary = cnn.Query<PrimaryLinkBO>(secondarySQL, new DynamicParameters());
-                return outputPrimary.Any() && outputSecondary.Any();
+                var linkList = cnn.Query<LinkBO>(SqlQuery);
+                return linkList.Any();
             }
         }
 
         /// <summary>
-        /// Upload links
+        /// Upload link
         /// </summary>
-        /// <param name="primaryLink">Primary link details</param>
-        /// <param name="secondaryLink">Secondary link details</param>
-        public static void UploadLinks(PrimaryLinkBO primaryLink, LinkBO secondaryLink)
+        /// <param name="link">Link details</param>
+        public static void UploadLinks(LinkBO link)
         {
-            string sqlQuery = $"INSERT INTO PrimaryLink (PrimaryLink_Name) VALUES ('{primaryLink.PrimaryLink_Name}')";
+            string sqlQuery = @$"
+INSERT INTO Link 
+(
+    Link_Name
+,   Link_Token
+,   Link_CreatedDateT
+,   Link_ExpiryDateT
+) 
+VALUES 
+(
+    '{link.Link_Name}'
+,   '{link.Link_Token}'
+,   {DateTime.Now}
+,   {DateTime.Now.AddDays(7)}
+)";
             using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                cnn.Execute(sqlQuery, primaryLink);
-            }
-
-            //var primary = GetPrimaryLink(primaryLink.PrimaryLink_Name);
-            //UploadSecondStageLink(secondaryLink, primary.Id);
-        }
-
-        /// <summary>
-        /// Upload secondary link
-        /// </summary>
-        /// <param name="secondaryLink">Secondary link details</param>
-        /// <param name="primaryLink_Id">Primary link ID for linking</param>
-        private static void UploadSecondStageLink(LinkBO secondaryLink, int primaryLink_Id)
-        {
-            secondaryLink.PrimaryLink_ID = primaryLink_Id;
-            string sqlQuery = $"INSERT INTO SecondaryLink (SecondaryLink_Name, SecondaryLink_Token, PrimaryLink_ID) VALUES ('{secondaryLink.SecondaryLink_Name}','{secondaryLink.SecondaryLink_Token}', {secondaryLink.PrimaryLink_ID})";
-
-            using (IDbConnection cnn = new SQLiteConnection(connectionString))
-            {
-                cnn.Execute(sqlQuery, secondaryLink);
+                cnn.Execute(sqlQuery);
             }
         }
 
         /// <summary>
-        /// Check if token exists
+        /// Delete expired links
         /// </summary>
-        /// <param name="token">input token</param>
-        /// <returns>True if exists</returns>
-        public static bool DoesTokenExist(string token)
+        public void DeleteLinks()
         {
-            var sqlQuery = $@"SELECT 1 FROM SecondaryLink WHERE SecondaryLink_Token = '{token}'";
+            string sqlQuery = @$"
+DELETE Link
+WHERE Link_ExpiryDateT < {DateTime.Now}";
 
-            using (IDbConnection connection = new SQLiteConnection(connectionString))
+            using (IDbConnection cnn = new SQLiteConnection(connectionString))
             {
-                var output = connection.Query<PrimaryLinkBO>(sqlQuery);
-
-                return output.Any();
+                cnn.Execute(sqlQuery);
             }
         }
     }
