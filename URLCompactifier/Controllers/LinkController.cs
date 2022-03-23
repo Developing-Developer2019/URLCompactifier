@@ -51,7 +51,7 @@ namespace URLCompactifier.Controllers
             else
             {
                 link.Link_Name = urlFullLink;
-                link.Link_Token = GenerateToken();
+                link.Link_Token = GenerateToken(urlFullLink);
                 link.Link_CreatedDateT = DateTime.Now.ToShortDateString();
                 link.Link_ExpiryDateT = DateTime.Now.AddDays(7).ToShortDateString();
                 link.LinkExists = linkExists;
@@ -71,7 +71,7 @@ namespace URLCompactifier.Controllers
         /// Method to generate a token
         /// </summary>
         /// <returns>Randomised token between 8-10</returns>
-        public string GenerateToken()
+        public string GenerateToken(string url)
         {
             string urlsafe = string.Empty;
             Enumerable.Range(48, 75)
@@ -79,12 +79,12 @@ namespace URLCompactifier.Controllers
               .OrderBy(o => new Random().Next())
               .ToList()
               .ForEach(i => urlsafe += Convert.ToChar(i)); // Store each char into urlsafe
-            var tokenValue = urlsafe.Substring(new Random().Next(0, urlsafe.Length), new Random().Next(8, 15));
+            var tokenValue = urlsafe.Substring(new Random().Next(0, urlsafe.Length), new Random().Next(4, 10));
 
             // Check if token exists, if true, run again
             if (SqlLiteDataAccess.DoesTokenExist(tokenValue))
             {
-                GenerateToken();
+                GenerateToken(url);
             }
 
             return tokenValue;
