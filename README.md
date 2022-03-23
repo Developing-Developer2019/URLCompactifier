@@ -9,3 +9,5 @@ Before this I only knew how to use an in house SQLHelper with work, and hadn't r
 It uses SqLite which is a NoSQL server approach with Dapper.
 
 Once I progress with unit testing I'll add that here too
+
+<b>NOTE: As there is no hosting. Shortened links would be sent via localhost/r/token i.e localhost/r/282hfhfyt</b>
